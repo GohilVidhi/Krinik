@@ -25,18 +25,20 @@ SECRET_KEY = 'django-insecure-f9_$ikjgru%t_7(sj(p&+249&2ezj(p_2vikj9ydmpgs7yvs$5
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'My_App',
 ]
 
@@ -48,8 +50,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
-
+CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = 'My_Project.urls'
 
 TEMPLATES = [
@@ -67,6 +70,21 @@ TEMPLATES = [
         },
     },
 ]
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "OPTIONS"
+]
+
+CORS_ALLOW_HEADERS = [
+    "Content-Type",
+    "Authorization"
+]
+
+
 
 WSGI_APPLICATION = 'My_Project.wsgi.application'
 

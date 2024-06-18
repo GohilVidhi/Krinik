@@ -16,8 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-
+from .views import*
 urlpatterns = [
-    path('admin/', admin.site.urls),
    
+    path('get/', League_view.as_view()),
+    path('get/<int:id>/', League_view.as_view()),
 ]

@@ -4,8 +4,8 @@ from django.db import models
 class League(models.Model):
     league_name=models.CharField(max_length=50,blank=True,null=True)
     short_league_name=models.CharField(max_length=50,blank=True,null=True)
-    start_league_date=models.DateTimeField()
-    end_league_date=models.DateTimeField()
+    start_league_date=models.CharField(max_length=50,blank=True,null=True)
+    end_league_date=models.CharField(max_length=50,blank=True,null=True)
     league_image=models.ImageField(upload_to="league_image_media")
     
     
