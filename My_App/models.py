@@ -1,5 +1,5 @@
 from django.db import models
-
+from django_mysql.models import ListTextField
 # Create your models here.
 class League(models.Model):
     league_name=models.CharField(max_length=50,blank=True,null=True)
@@ -92,3 +92,13 @@ class Pair(models.Model):
 
     def __str__(self):
         return str(self.pool_id) 
+    
+    
+    
+class new(models.Model):
+
+    widget_group_ids = ListTextField(
+            base_field=models.IntegerField(),
+            size=100,  # Maximum of 100 ids in list
+            blank=True,null=True
+        )

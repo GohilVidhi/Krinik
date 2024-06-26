@@ -44,4 +44,8 @@ urlpatterns = [
     path('pair_get/', Pair_view.as_view()),
     path('pair_get/<int:id>/', Pair_view.as_view()),
     
+    
+    path('new_get/', new_view.as_view()),
+    path('new_get/<int:id>/', new_view.as_view()),
+    
 ]

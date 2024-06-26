@@ -38,6 +38,7 @@ class League_serializers(serializers.Serializer):
         return instance        
     
     
+
     
     
 #-------------Team_serializers view----------------
@@ -177,7 +178,7 @@ class PoolSerializer(serializers.ModelSerializer):
             Player.objects.filter(player_name__in=[player.player_name for player in player_name2_data])
         )
         
-       
+        
 
         instance.save()
         return instance
@@ -235,3 +236,28 @@ class PairSerializer(serializers.ModelSerializer):
         instance.pool_id = pool_id
         instance.save()
         return instance
+
+
+
+
+
+class new_serializers(serializers.Serializer):
+    id = serializers.IntegerField(required=False)
+    
+    widget_group_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=0, max_value=100),
+        
+        # max_length=2,
+    )
+    class Meta:
+        models=new
+        fields ='__all__'
+        exclude = ('id',) 
+
+    def create(self, validated_data):
+        return new.objects.create(**validated_data)    
+    
+    def update(self, instance, validated_data):
+        instance.widget_group_ids=validated_data.get('widget_group_ids',instance.widget_group_ids)
+        instance.save()
+        return instance  

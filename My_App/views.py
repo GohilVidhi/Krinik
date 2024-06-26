@@ -280,3 +280,56 @@ class Pair_view(APIView):
                 return Response({'status': 'invalid id'})
         else:
             return Response({'status': 'id required'})
+        
+        
+        
+class new_view(APIView):
+    def get(self,request,id=None):  
+        if id:
+        
+            try:
+                uid=new.objects.get(id=id)
+                serializer=new_serializers(uid)
+                return Response({'status':'success','data':serializer.data})
+            except:
+                return Response({'status':"Invalid"})
+        else:
+            uid=new.objects.all()
+            serializer=new_serializers(uid,many=True)
+            return Response({'status':'success','data':serializer.data})
+      
+    def post(self,request):
+        serializer=new_serializers(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'status':'success','data':serializer.data})
+        else:
+            return Response({'status':"invalid data"})
+        
+     
+    def patch(self,request,id=None):
+        try:
+            uid=new.objects.get(id=id)
+        except:
+            return Response({'status':"invalid data"})
+        serializer=new_serializers(uid,data=request.data,partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'status':'success','data':serializer.data})
+        else:
+            return Response({'status':"invalid data"})
+        
+        
+        
+        
+              
+    def delete(self,request,id=None):
+        if id:
+            try:
+                uid=new.objects.get(id=id)
+                uid.delete()
+                return Response({'status':'Deleted data'})
+            except:
+                return Response({'status':"invalid id"})
+        else:
+            return Response({'status':"invalid data"})    
