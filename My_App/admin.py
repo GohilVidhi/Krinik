@@ -16,7 +16,8 @@ admin.site.register(Pool_Declare)
 admin.site.register(Pair_with_captain)
 admin.site.register(Pair_with_captain_and_v_captain)
 
-
+admin.site.register(user)
+admin.site.register(login_user)
 
 
 

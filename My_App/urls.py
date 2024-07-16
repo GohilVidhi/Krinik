@@ -82,7 +82,11 @@ urlpatterns = [
     path('pool_declare/', Pool_Declare_view.as_view()),
     path('pool_declare/<int:id>/', Pool_Declare_view.as_view()),
     
-    
+    path('user_get/', user_view.as_view()),
+    path('user_get/<int:id>/', user_view.as_view()),
+
+    path('login_get/', login_view.as_view()),
+    path('login_get/<int:id>/', login_view.as_view()),
 ]
 
 

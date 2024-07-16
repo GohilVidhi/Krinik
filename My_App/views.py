@@ -698,3 +698,126 @@ class Pool_Declare_view(APIView):
         else:
             return Response({'status': "invalid data"})
 
+
+
+
+class user_view(APIView):
+    def get(self,request,id=None):  
+        if id:
+        
+            try:
+                uid=user.objects.get(id=id)
+                serializer=user_serializers(uid)
+                return Response({'status':'success','data':serializer.data})
+            except:
+                return Response({'status':"Invalid"})
+        else:
+            uid=user.objects.all().order_by("-id")
+            for i in uid:
+                print(i.date_time)
+            serializer=user_serializers(uid,many=True)
+            return Response({'status':'success','data':serializer.data})
+      
+    def post(self,request):
+        serializer=user_serializers(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'status':'success','data':serializer.data})
+        else:
+            return Response({'status':"invalid data"})
+        
+     
+    def patch(self,request,id=None):
+        try:
+            uid=user.objects.get(id=id)
+        except:
+            return Response({'status':"invalid data"})
+        serializer=user_serializers(uid,data=request.data,partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'status':'success','data':serializer.data})
+        else:
+            return Response({'status':"invalid data"})
+        
+        
+        
+        
+              
+    def delete(self,request,id=None):
+        if id:
+            try:
+                uid=user.objects.get(id=id)
+                uid.delete()
+                return Response({'status':'Deleted data'})
+            except:
+                return Response({'status':"invalid id"})
+        else:
+            return Response({'status':"invalid data"})        
+        
+
+class login_view(APIView):
+    def get(self,request,id=None , email=None):  
+
+        if id:
+        
+            try:
+                uid=login_user.objects.get(id=id)
+                serializer=login_serializers(uid)
+                return Response({'status':'success','data':serializer.data})
+            except:
+                return Response({'status':"Invalid"})
+        elif email:
+        
+            try:
+                uid=login_user.objects.get(email=email)
+                serializer=login_serializers(uid)
+                return Response({'status':'success','data':serializer.data})
+            except:
+                return Response({'status':"Invalid"})    
+        else:
+            uid=login_user.objects.all().order_by("-id")
+            serializer=login_serializers(uid,many=True)
+            return Response({'status':'success','data':serializer.data})
+      
+    def post(self,request):
+        serializer=login_serializers(data=request.data)
+        if serializer.is_valid():
+            user1=serializer.save()
+            print(user1)
+            request.session["email"]=user1.email
+            return Response({'status':'success','data':serializer.data})
+        else:
+            return Response({'status':"invalid data"})
+        
+     
+    def patch(self,request,id=None):
+        try:
+            uid=login_user.objects.get(id=id)
+        except:
+            return Response({'status':"invalid data"})
+        serializer=login_serializers(uid,data=request.data,partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'status':'success','data':serializer.data})
+        else:
+            return Response({'status':"invalid data"}) 
+    def delete(self,request,id=None,email=None):
+        if id:
+            try:
+                uid=login_user.objects.get(id=id)
+                uid.delete()
+                return Response({'status':'Deleted data'})
+            except:
+                return Response({'status':"invalid id"})
+        elif email:
+            del request.session['email']
+            return Response({'status': 'Logged out successfully'})
+
+        else:
+            return Response({'status':"invalid data"})        
+    def logout(self, request):
+        try:
+            del request.session['email']
+        except KeyError:
+            pass
+        return Response({'status': 'Logged out successfully'})

@@ -1,3 +1,4 @@
+from typing import Any
 from django.db import models
 from django_mysql.models import ListTextField
 
@@ -214,7 +215,7 @@ class Captain_Add_Pool(models.Model):
         
         
         
-#==================  Vice_Captain_Add_Pool Models=================
+#================== Vice_Captain_Add_Pool Models=================
         
         
 
@@ -244,3 +245,22 @@ class Pool_Declare(models.Model):
     team_declare=models.ForeignKey(Team, on_delete=models.CASCADE, blank=True, null=True)
     total_run=models.IntegerField(blank=True,null=True)
     
+    
+class user(models.Model):
+    name=models.CharField(max_length=100)
+    modile_no=models.IntegerField()
+    email=models.EmailField(max_length=100)
+    date_time=models.DateTimeField(auto_now=True)
+    image=models.ImageField(upload_to="league_image_media")
+    wallet_amount=models.IntegerField()
+    winning_amount=models.IntegerField()
+
+    def __str__(self):
+        return self.name 
+
+class login_user(models.Model):
+    email=models.EmailField(max_length=50)
+    password=models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.email     
