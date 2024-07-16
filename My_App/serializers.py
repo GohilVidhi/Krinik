@@ -203,21 +203,13 @@ class AddPool_Serializer(serializers.ModelSerializer):
 
 
 
-
 class PairSerializer(serializers.ModelSerializer):
     player_1 = serializers.SlugRelatedField(slug_field='player_name', queryset=Player.objects.all())
     player_2 = serializers.SlugRelatedField(slug_field='player_name', queryset=Player.objects.all())
     pool_name = serializers.SlugRelatedField(slug_field='pool_name', queryset=Add_Pool.objects.none(), allow_null=True, required=False)
     select_match = serializers.SlugRelatedField(slug_field='match_display_name', queryset=Match.objects.none(), allow_null=True, required=False)
     limit = serializers.IntegerField()
-    
-    def get_players(self, obj):
-        return [
-            PlayerSerializer(obj.player_1).data,
-            PlayerSerializer(obj.player_2).data
-        ]
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, args, *kwargs):
         super(PairSerializer, self).__init__(*args, **kwargs)
 
         if 'data' in kwargs:
@@ -227,62 +219,57 @@ class PairSerializer(serializers.ModelSerializer):
 
             if league_name:
                 # Filter pool_name queryset based on the league_name provided in the input data
-                self.fields['pool_name'].queryset = Add_Pool.objects.filter(pool_name=league_name, select_match__match_display_name=match_display_name)
+                self.fields['pool_name'].queryset = Add_Pool.objects.filter(pool_name=league_name,select_match__match_display_name=match_display_name)
 
             if match_display_name:
                 # Filter select_match queryset based on the match_display_name provided in the input data
                 self.fields['select_match'].queryset = Match.objects.filter(match_display_name=match_display_name)
 
+
+
     class Meta:
         model = Pair
-        fields = ['id', 'pool_name', 'select_match', 'players', 'limit']
+        fields = ['id', 'pool_name','select_match', 'player_1', 'player_2', 'limit']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['players'] = [
-            PlayerSerializer(instance.player_1).data,
-            PlayerSerializer(instance.player_2).data
-        ]
-        representation['pool_name'] = AddPool_Serializer(instance.pool_name).data if instance.pool_name else None
-        representation['select_match'] = Match_Serializer(instance.select_match).data if instance.select_match else None
+        representation["player_1"] = PlayerSerializer(instance.player_1).data
+        representation["player_2"] = PlayerSerializer(instance.player_2).data
+        representation["pool_name"] = instance.pool_name.pool_name if instance.pool_name else None
+        representation["select_match"] = Match_Serializer(instance.select_match).data if instance.select_match else None
         return representation
 
+
     def create(self, validated_data):
-        players_data = validated_data.pop('players')
+        player_1_name = validated_data.pop('player_1')
+        player_2_name = validated_data.pop('player_2')
         limit = validated_data.pop('limit')
-        pool_name = validated_data.pop('pool_name', None)
-        select_match = validated_data.pop('select_match', None)
+        pool_name = validated_data.get('pool_name', None)
+        select_match = validated_data.get('select_match', None)
 
-        player_1_data = players_data[0]
-        player_2_data = players_data[1]
+        player_1 = Player.objects.get(player_name=player_1_name)
+        player_2 = Player.objects.get(player_name=player_2_name)
 
-        player_1 = Player.objects.get(player_name=player_1_data['player_name'])
-        player_2 = Player.objects.get(player_name=player_2_data['player_name'])
-
-        pair = Pair.objects.create(player_1=player_1, player_2=player_2, pool_name=pool_name, limit=limit, select_match=select_match)
+        pair = Pair.objects.create(player_1=player_1, player_2=player_2, pool_name=pool_name, limit=limit,select_match=select_match)
         return pair
 
     def update(self, instance, validated_data):
-        players_data = validated_data.pop('players', [])
+        player_1_name = validated_data.pop('player_1', None)
+        player_2_name = validated_data.pop('player_2', None)
         limit = validated_data.get('limit', instance.limit)
         pool_name = validated_data.get('pool_name', instance.pool_name)
-        select_match = validated_data.get('select_match', instance.select_match)
 
-        if len(players_data) >= 2:
-            player_1_data = players_data[0]
-            player_2_data = players_data[1]
 
-            player_1 = Player.objects.get(player_name=player_1_data['player_name'])
-            player_2 = Player.objects.get(player_name=player_2_data['player_name'])
-
+        if player_1_name:
+            player_1 = Player.objects.get(player_name=player_1_name)
             instance.player_1 = player_1
+        if player_2_name:
+            player_2 = Player.objects.get(player_name=player_2_name)
             instance.player_2 = player_2
-
+        instance.select_match = validated_data.get('select_match', instance.select_match)
         instance.limit = limit
         instance.pool_name = pool_name
-        instance.select_match = select_match
         instance.save()
-
         return instance
     
     
