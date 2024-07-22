@@ -157,7 +157,7 @@ class Pair(models.Model):
     player_1=models.ForeignKey(Player, related_name='pool_player1', on_delete=models.CASCADE,blank=True,null=True)
     
     player_2=models.ForeignKey(Player, related_name='pool_player2', on_delete=models.CASCADE,blank=True,null=True)
-    limit=models.IntegerField()
+    limit=models.IntegerField(blank=True,null=True)
 
     def __str__(self):
         return str(self.pool_name) 
@@ -250,6 +250,7 @@ class user(models.Model):
     name=models.CharField(max_length=100)
     modile_no=models.IntegerField()
     email=models.EmailField(max_length=100)
+    status=models.CharField(default="unblock",blank=True,null=True,max_length=10)
     date_time=models.DateTimeField(auto_now=True)
     image=models.ImageField(upload_to="league_image_media")
     wallet_amount=models.IntegerField()

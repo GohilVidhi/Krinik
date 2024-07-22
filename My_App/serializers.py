@@ -142,6 +142,7 @@ class Leagueserializers(serializers.ModelSerializer):
         # fields="__all__"
 
 
+
 class PoolSerializer(serializers.ModelSerializer):
     player_name1 = serializers.SlugRelatedField(slug_field='player_name', queryset=Player.objects.all(), many=True)
     player_name2 = serializers.SlugRelatedField(slug_field='player_name', queryset=Player.objects.all(), many=True)
@@ -201,80 +202,106 @@ class AddPool_Serializer(serializers.ModelSerializer):
         model = Add_Pool
         fields = ['id','pool_type', 'pool_name', 'price', 'winning_price', 'fantacy_start_date', 'fantacy_end_date']
 
+#=================
 
+
+class PlayerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['player_name', 'player_image', 'player_short_name', 'total_run']
+
+class PlayerNameSerializer(serializers.Serializer):
+    player_name = serializers.CharField(max_length=255)
+
+class PlayerPairSerializer(serializers.Serializer):
+    player_1 = PlayerNameSerializer()
+    player_2 = PlayerNameSerializer()
+    limit = serializers.IntegerField()
+
+class PoolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Add_Pool
+        fields = ['id', 'pool_type', 'pool_name', 'price', 'winning_price', 'fantacy_start_date', 'fantacy_end_date']
+
+class MatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Match
+        fields = ['id', 'select_team_A', 'select_player_A', 'select_team_B', 'select_player_B']
 
 class PairSerializer(serializers.ModelSerializer):
-    player_1 = serializers.SlugRelatedField(slug_field='player_name', queryset=Player.objects.all())
-    player_2 = serializers.SlugRelatedField(slug_field='player_name', queryset=Player.objects.all())
-    pool_name = serializers.SlugRelatedField(slug_field='pool_name', queryset=Add_Pool.objects.none(), allow_null=True, required=False)
-    select_match = serializers.SlugRelatedField(slug_field='match_display_name', queryset=Match.objects.none(), allow_null=True, required=False)
-    limit = serializers.IntegerField()
-    def __init__(self, args, *kwargs):
-        super(PairSerializer, self).__init__(*args, **kwargs)
-
-        if 'data' in kwargs:
-            data = kwargs['data']
-            league_name = data.get('pool_name')
-            match_display_name = data.get('select_match')
-
-            if league_name:
-                # Filter pool_name queryset based on the league_name provided in the input data
-                self.fields['pool_name'].queryset = Add_Pool.objects.filter(pool_name=league_name,select_match__match_display_name=match_display_name)
-
-            if match_display_name:
-                # Filter select_match queryset based on the match_display_name provided in the input data
-                self.fields['select_match'].queryset = Match.objects.filter(match_display_name=match_display_name)
-
-
+    players = PlayerPairSerializer(many=True, write_only=True)
+    pool_name = serializers.SlugRelatedField(slug_field='pool_name', queryset=Add_Pool.objects.all())
+    select_match = serializers.SlugRelatedField(slug_field='match_display_name', queryset=Match.objects.all())
 
     class Meta:
         model = Pair
-        fields = ['id', 'pool_name','select_match', 'player_1', 'player_2', 'limit']
+        fields = ['id', 'pool_name', 'select_match', 'players']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation["player_1"] = PlayerSerializer(instance.player_1).data
-        representation["player_2"] = PlayerSerializer(instance.player_2).data
-        representation["pool_name"] = instance.pool_name.pool_name if instance.pool_name else None
-        representation["select_match"] = Match_Serializer(instance.select_match).data if instance.select_match else None
+        representation['players'] = [
+            {
+                'player_1': PlayerSerializer(instance.player_1).data,
+                'player_2': PlayerSerializer(instance.player_2).data,
+                'limit': instance.limit
+            }
+        ]
+        representation['pool_name'] = PoolSerializer(instance.pool_name).data if instance.pool_name else None
+        representation['select_match'] = MatchSerializer(instance.select_match).data if instance.select_match else None
         return representation
 
-
     def create(self, validated_data):
-        player_1_name = validated_data.pop('player_1')
-        player_2_name = validated_data.pop('player_2')
-        limit = validated_data.pop('limit')
-        pool_name = validated_data.get('pool_name', None)
-        select_match = validated_data.get('select_match', None)
+        players_data = validated_data.pop('players')
+        pool_name = validated_data.pop('pool_name')
+        select_match = validated_data.pop('select_match')
+        print(players_data)
+        pool_instance = Add_Pool.objects.get(pool_name=pool_name)
 
-        player_1 = Player.objects.get(player_name=player_1_name)
-        player_2 = Player.objects.get(player_name=player_2_name)
+        for player_data in players_data:
+            player_1_data = player_data['player_1']
+            player_2_data = player_data['player_2']
+            limit = player_data['limit']
 
-        pair = Pair.objects.create(player_1=player_1, player_2=player_2, pool_name=pool_name, limit=limit,select_match=select_match)
+            player_1 = Player.objects.get(player_name=player_1_data['player_name'])
+            player_2 = Player.objects.get(player_name=player_2_data['player_name'])
+
+            pair = Pair.objects.create(
+                player_1=player_1,
+                player_2=player_2,
+                limit=limit,
+                pool_name=pool_instance,
+                select_match=select_match
+            )
+
         return pair
 
     def update(self, instance, validated_data):
-        player_1_name = validated_data.pop('player_1', None)
-        player_2_name = validated_data.pop('player_2', None)
-        limit = validated_data.get('limit', instance.limit)
-        pool_name = validated_data.get('pool_name', instance.pool_name)
+        players_data = validated_data.pop('players', [])
+        pool_name = validated_data.get('pool_name', instance.pool_name.pool_name)
+        select_match = validated_data.get('select_match', instance.select_match)
 
+        pool_instance = Add_Pool.objects.get(pool_name=pool_name)
 
-        if player_1_name:
-            player_1 = Player.objects.get(player_name=player_1_name)
-            instance.player_1 = player_1
-        if player_2_name:
-            player_2 = Player.objects.get(player_name=player_2_name)
-            instance.player_2 = player_2
-        instance.select_match = validated_data.get('select_match', instance.select_match)
-        instance.limit = limit
-        instance.pool_name = pool_name
+        if players_data:
+            for player_data in players_data:
+                player_1_data = player_data['player_1']
+                player_2_data = player_data['player_2']
+                limit = player_data['limit']
+
+                player_1 = Player.objects.get(player_name=player_1_data['player_name'])
+                player_2 = Player.objects.get(player_name=player_2_data['player_name'])
+
+                instance.player_1 = player_1
+                instance.player_2 = player_2
+                instance.limit = limit
+
+        instance.pool_name = pool_instance
+        instance.select_match = select_match
         instance.save()
+
         return instance
-    
-    
- 
-    
+#((((((((((((((((((((((((((((((((()))))))))))))))))))))))))))))))))
+
 #===============Pair with captain serializers====================
 # pair_2
     
@@ -304,9 +331,6 @@ class Pair_with_captain_Serializer(serializers.ModelSerializer):
                 self.fields['select_match'].queryset = Match.objects.filter(match_display_name=match_display_name)
             
 
-
-
-    
     class Meta:
         model = Pair_with_captain
         fields = ['id', 'pool_name','select_match' ,'player_1', 'player_2', 'limit']
@@ -466,7 +490,7 @@ class new_serializers(serializers.Serializer):
         return instance  
     
 #=======================Match  Serializer==============
-    
+                              
 class MatchSerializer(serializers.ModelSerializer):
     select_league = serializers.SlugRelatedField(slug_field='league_name', queryset=League.objects.all(), required=False, allow_null=True)
     # select_team_A = serializers.SlugRelatedField(slug_field='team_name', queryset=Team.objects.all(), required=False, allow_null=True)
@@ -530,7 +554,7 @@ class MatchSerializer(serializers.ModelSerializer):
 
 #============= Match Serializer for add pool show data===================
 class Match_Serializer(serializers.ModelSerializer):
-    
+      
     select_team_A = serializers.SlugRelatedField(slug_field='team_name', queryset=Team.objects.all(), required=False, allow_null=True)
     
     select_team_B = serializers.SlugRelatedField(slug_field='team_name', queryset=Team.objects.all(), required=False, allow_null=True)
@@ -538,7 +562,7 @@ class Match_Serializer(serializers.ModelSerializer):
     select_player_B = serializers.SlugRelatedField(slug_field='player_name', queryset=Player.objects.all(), many=True, required=False, allow_null=True)
     class Meta:
         model = Match
-        fields = ['select_team_A',"select_player_A",'select_team_B',"select_player_B"]
+        fields = ['select_team_A',"select_player_A",'select_team_B',"select_player_B","match_display_name"]
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -553,7 +577,7 @@ class Match_Serializer(serializers.ModelSerializer):
         return representation
 
     def update(self, instance, validated_data):
-       
+        
         instance.select_team_A = validated_data.get('select_team_A', instance.select_team_A)
         instance.select_team_B = validated_data.get('select_team_B', instance.select_team_B)
 
@@ -562,6 +586,7 @@ class Match_Serializer(serializers.ModelSerializer):
         return instance
     
     
+
 
 
 #=================Add Pool Serializer============================
@@ -811,6 +836,8 @@ class user_serializers(serializers.Serializer):
     winning_amount = serializers.IntegerField(required=True)
     image=serializers.ImageField(required=True)
     date_time = serializers.SerializerMethodField()
+    status=serializers.CharField(max_length=20,required=True)
+
     class Meta:
         models=user
         fields ='__all__'
@@ -833,6 +860,8 @@ class user_serializers(serializers.Serializer):
         
         instance.winning_amount=validated_data.get('winning_amount',instance.winning_amount)
         instance.image=validated_data.get('image',instance.image)
+        instance.status=validated_data.get('status',instance.status)
+
         # instance.date=validated_data.get('date',instance.date)
 
         instance.save()
@@ -843,12 +872,12 @@ class login_serializers(serializers.Serializer):
     id = serializers.IntegerField(required=False)
     email=serializers.CharField(max_length=20,required=True)
     password=serializers.CharField(max_length=20,required=True)
-   
+    
     class Meta:
         models=login_user
         fields ='__all__'
         exclude = ('id',) 
-    
+                                                                                                                                                                    
 
     def create(self, validated_data):
         return login_user.objects.create(**validated_data)
